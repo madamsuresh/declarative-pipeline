@@ -1,0 +1,49 @@
+pipeline{
+
+agent any
+
+
+tools{
+maven 'maven 3.8.4'
+}
+
+triggers {
+  pollSCM('* * * * *')
+  //cron('* * * * *')
+}
+
+options {
+  //Add the Timestamp to the console output
+  timestamps()
+  //Discard Old Builds
+  buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')
+}
+ stages{
+ 
+    //Get the code from GitHub
+     stage('CheckoutCode'){
+	 steps{
+	  git branch: 'development', credentialsId: '90939e1e-4faa-46d8-b39b-d9bc24040c56', url: 'https://github.com/madamsuresh/mavenwebapplication.git'
+	 }
+	 }
+  
+    //Do the build
+	stage('Build'){
+	steps{
+	sh "mvn clean package"
+	}
+	}
+	
+	//Deploy App into Tomcat Server
+	stage('DeployAppIntoTomcatServer'){
+	steps{
+    sshagent(['8e25e58b-1583-4e1c-b855-17ae79b3dd9d']) {
+        sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ubuntu@3.6.93.80:/var/lib/tomcat9/webapps"
+    }
+	}
+	}
+
+ }
+ 
+ 
+}//Pipeline closing
